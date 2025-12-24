@@ -1,0 +1,81 @@
+# -----------------------------
+# Replica settings
+# -----------------------------
+replicaCount: 2
+
+
+# -----------------------------
+# Container image
+# -----------------------------
+image:
+  repository: <AWS_ACCOUNT_ID>.dkr.ecr.ap-southeast-1.amazonaws.com/node-express-app
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+
+# -----------------------------
+# Service configuration
+# -----------------------------
+service:
+  type: ClusterIP
+  port: 3000
+
+
+# -----------------------------
+# Resource requests & limits
+# -----------------------------
+resources:
+  requests:
+    cpu: "200m"
+    memory: "256Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
+
+# -----------------------------
+# Non-sensitive config (ConfigMap)
+# -----------------------------
+config:
+  PORT: "3000"
+  JWT_ACCESS_EXPIRATION_MINUTES: "30"
+  JWT_REFRESH_EXPIRATION_DAYS: "30"
+
+
+# -----------------------------
+# Secrets (AWS Secrets Manager → ESO)
+# -----------------------------
+secrets:
+  name: node-express-app-secrets
+
+
+# -----------------------------
+# Service Account (IRSA)
+# -----------------------------
+serviceAccount:
+  create: true
+  name: node-express-sa
+
+
+# -----------------------------
+# Ingress (AWS ALB Controller)
+# -----------------------------
+ingress:
+  enabled: true
+
+  className: alb
+
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
+    alb.ingress.kubernetes.io/healthcheck-path: /v1/health
+
+  hosts:
+    - paths:
+        - path: /
+          pathType: Prefix
+
+  # If you later add HTTPS with ACM
+  tls: []
