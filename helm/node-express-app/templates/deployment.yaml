@@ -1,33 +1,61 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Chart.Name }}
+  name: {{ include "node-express.name" . }}
+  namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.replicaCount }}
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+
   selector:
     matchLabels:
-      app: {{ .Chart.Name }}
+      app.kubernetes.io/name: {{ include "node-express.name" . }}
+
   template:
     metadata:
       labels:
-        app: {{ .Chart.Name }}
+        app.kubernetes.io/name: {{ include "node-express.name" . }}
+
     spec:
       serviceAccountName: {{ .Values.serviceAccount.name }}
+
+      tolerations:
+{{ toYaml .Values.tolerations | indent 8 }}
+
       containers:
         - name: node-express
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+
           ports:
-            - containerPort: {{ .Values.service.port }}
+            - containerPort: {{ .Values.service.targetPort }}
+
           envFrom:
             - configMapRef:
-                name: {{ .Chart.Name }}-config
+                name: {{ include "node-express.name" . }}-config
             - secretRef:
                 name: {{ .Values.secrets.name }}
+
+          readinessProbe:
+            httpGet:
+              path: /v1/health
+              port: {{ .Values.service.targetPort }}
+            initialDelaySeconds: 10
+
+          livenessProbe:
+            httpGet:
+              path: /v1/health
+              port: {{ .Values.service.targetPort }}
+            initialDelaySeconds: 30
+
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+
           resources:
-            requests:
-              cpu: {{ .Values.resources.requests.cpu }}
-              memory: {{ .Values.resources.requests.memory }}
-            limits:
-              cpu: {{ .Values.resources.limits.cpu }}
-              memory: {{ .Values.resources.limits.memory }}
+{{ toYaml .Values.resources | indent 12 }}

@@ -1,8 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ .Chart.Name }}-config
+  name: {{ include "node-express.name" . }}-config
+  namespace: {{ .Release.Namespace }}
 data:
   PORT: {{ .Values.config.PORT | quote }}
-  JWT_ACCESS_EXPIRATION_MINUTES: {{ .Values.config.JWT_ACCESS_EXPIRATION_MINUTES | quote }}
-  JWT_REFRESH_EXPIRATION_DAYS: {{ .Values.config.JWT_REFRESH_EXPIRATION_DAYS | quote }}
